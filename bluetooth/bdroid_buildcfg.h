@@ -1,6 +1,9 @@
 /*
+ *  Copyright (c) 2013, The Linux Foundation. All rights reserved.
+ *  Not a Contribution.
+ *
  * Copyright (C) 2012 The Android Open Source Project
- * Copyright (C) 2014 The CyanogenMod Project <http://www.cyanogenmod.org>
+ * Copyright (C) 2018-2020 The LineageOS Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,36 +21,48 @@
 #ifndef _BDROID_BUILDCFG_H
 #define _BDROID_BUILDCFG_H
 
-#pragma push_macro("PROPERTY_VALUE_MAX")
-
-#include <cutils/properties.h>
+#include <stdint.h>
 #include <string.h>
 
-static inline const char* BtmGetDefaultName()
+#include "osi/include/osi.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+int property_get(const char *key, char *value, const char *default_value);
+#ifdef __cplusplus
+}
+#endif
+
+typedef struct {
+    const char *product_device;
+    const char *product_model;
+} device_t;
+
+static const device_t devices[] = {
+    {"starqltechn", "Samsung Galaxy S9"},
+    {"star2qltechn", "Samsung Galaxy S9+"},
+    {"crownqltechn", "Samsung Galaxy N9"},
+};
+
+static inline const char *BtmGetDefaultName()
 {
-    char product_device[PROPERTY_VALUE_MAX];
+    char product_device[92];
     property_get("ro.product.device", product_device, "");
-    
-    if (strstr(product_device, "starqltechn"))
-        return "Galaxy S9";
-    if (strstr(product_device, "star2qltechn"))
-        return "Galaxy S9+";
-    if (strstr(product_device, "crownqltechn"))
-        return "Galaxy Note 9";
-    
-    // Fallback to Default
-    return "Samsung Galaxy";
+
+    for (unsigned int i = 0; i < ARRAY_SIZE(devices); i++) {
+        device_t device = devices[i];
+
+        if (strcmp(device.product_device, product_device) == 0) {
+            return device.product_model;
+        }
+    }
+
+    // Fallback to ro.product.model
+    return "";
 }
 
 #define BTM_DEF_LOCAL_NAME BtmGetDefaultName()
-
-#define BTM_WBS_INCLUDED TRUE       /* Enable WBS */
-#define BTIF_HF_WBS_PREFERRED FALSE /* Don't prefer WBS    */
-
 #define BLE_VND_INCLUDED TRUE
-
-#define BTM_SCO_ENHANCED_SYNC_ENABLED FALSE
-
-#pragma pop_macro("PROPERTY_VALUE_MAX")
-
+#define DISABLE_WBS TRUE
 #endif
